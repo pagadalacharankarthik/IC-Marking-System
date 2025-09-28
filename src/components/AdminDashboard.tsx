@@ -23,6 +23,10 @@ import {
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { DUMMY_INSPECTIONS, getDashboardStats, getChartData } from '@/data/dummyData';
 import { toast } from '@/hooks/use-toast';
+import { generateCSV, generatePDF, generateExcel } from '@/utils/exportUtils';
+import { AuditTimeline } from '@/components/AuditTimeline';
+import { BatchHealthScore } from '@/components/BatchHealthScore';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 export const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,18 +43,33 @@ export const AdminDashboard = () => {
   ];
 
   const handleExport = (format: string) => {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `ic_inspection_report_${timestamp}`;
+    
     toast({
       title: "Export Started",
       description: `Generating ${format.toUpperCase()} report...`,
     });
 
-    // Simulate export delay
+    // Actual export with real file download
     setTimeout(() => {
+      switch (format) {
+        case 'csv':
+          generateCSV(DUMMY_INSPECTIONS, `${filename}.csv`);
+          break;
+        case 'pdf':
+          generatePDF(DUMMY_INSPECTIONS, `${filename}.txt`);
+          break;
+        case 'excel':
+          generateExcel(DUMMY_INSPECTIONS, `${filename}.xls`);
+          break;
+      }
+      
       toast({
         title: "Export Complete",
         description: `Report downloaded as ${format.toUpperCase()} file`,
       });
-    }, 2000);
+    }, 1500);
   };
 
   const getStatusIcon = (status: string) => {
@@ -135,15 +154,20 @@ export const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="analytics" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="logs">Inspection Logs</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-4">
+          <TabsList className="grid grid-cols-5 w-fit">
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="logs">Inspection Logs</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="timeline">Audit Timeline</TabsTrigger>
+          </TabsList>
+          <DarkModeToggle />
+        </div>
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
+          <BatchHealthScore />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Pie Chart */}
             <Card>
@@ -403,6 +427,11 @@ export const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Audit Timeline Tab */}
+        <TabsContent value="timeline" className="space-y-6">
+          <AuditTimeline inspections={DUMMY_INSPECTIONS} />
         </TabsContent>
       </Tabs>
     </div>

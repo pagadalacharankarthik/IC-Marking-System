@@ -19,6 +19,9 @@ import {
 import { DUMMY_INSPECTIONS, getDashboardStats } from '@/data/dummyData';
 import { ICInspection } from '@/types/auth';
 import { toast } from '@/hooks/use-toast';
+import { ConfidenceMeter } from '@/components/ConfidenceMeter';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
+import { MultiDeviceHandoff } from '@/components/MultiDeviceHandoff';
 
 export const SupervisorDashboard = () => {
   const [selectedInspection, setSelectedInspection] = useState<ICInspection | null>(null);
@@ -89,6 +92,12 @@ export const SupervisorDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Dark Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Supervisor Dashboard</h1>
+        <DarkModeToggle />
+      </div>
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -138,8 +147,13 @@ export const SupervisorDashboard = () => {
                     <div>
                       <p className="font-medium">{inspection.extractedText}</p>
                       <p className="text-sm text-muted-foreground">
-                        {inspection.workerName} • {inspection.batchNumber} • {inspection.confidence}% confidence
+                        {inspection.workerName} • {inspection.batchNumber}
                       </p>
+                      <ConfidenceMeter 
+                        confidence={inspection.confidence} 
+                        status={inspection.status}
+                        className="mt-2"
+                      />
                       {inspection.notes && (
                         <p className="text-sm text-muted-foreground italic">"{inspection.notes}"</p>
                       )}
@@ -225,6 +239,9 @@ export const SupervisorDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Multi-Device Collaboration */}
+      <MultiDeviceHandoff />
 
       {/* Review Dialog */}
       <Dialog open={!!selectedInspection} onOpenChange={() => setSelectedInspection(null)}>

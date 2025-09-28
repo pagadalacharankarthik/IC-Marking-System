@@ -19,6 +19,13 @@ import {
 import { DUMMY_INSPECTIONS, DUMMY_OEM_DATABASE } from '@/data/dummyData';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { ConfidenceMeter } from '@/components/ConfidenceMeter';
+import { ICImageOverlay } from '@/components/ICImageOverlay';
+import { HeatmapOverlay } from '@/components/HeatmapOverlay';
+import { BadgeSystem } from '@/components/BadgeSystem';
+import { QRCodeGenerator } from '@/components/QRCodeGenerator';
+import { MultiDeviceHandoff } from '@/components/MultiDeviceHandoff';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 export const WorkerDashboard = () => {
   const { user } = useAuth();
@@ -113,15 +120,27 @@ export const WorkerDashboard = () => {
     inspection => inspection.workerEmail === user?.email
   ).slice(0, 5);
 
+  const userStats = {
+    totalScans: DUMMY_INSPECTIONS.filter(i => i.workerEmail === user?.email).length,
+    authenticCount: DUMMY_INSPECTIONS.filter(i => i.workerEmail === user?.email && i.status === 'authentic').length,
+    fakeCount: DUMMY_INSPECTIONS.filter(i => i.workerEmail === user?.email && i.status === 'fake').length,
+    suspiciousCount: DUMMY_INSPECTIONS.filter(i => i.workerEmail === user?.email && i.status === 'suspicious').length,
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Welcome back, {user?.fullName}</CardTitle>
-          <CardDescription>
-            Upload IC images for marking verification and quality control
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Welcome back, {user?.fullName}</CardTitle>
+              <CardDescription>
+                Upload IC images for marking verification and quality control
+              </CardDescription>
+            </div>
+            <DarkModeToggle />
+          </div>
         </CardHeader>
       </Card>
 
@@ -189,86 +208,85 @@ export const WorkerDashboard = () => {
             </Button>
 
             {lastResult && (
-              <Alert className="mt-4">
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(lastResult.status)}
-                  <AlertDescription>
-                    <strong>Result:</strong> {lastResult.extractedText} - {' '}
-                    <Badge className={getStatusBadge(lastResult.status)}>
-                      {lastResult.status.toUpperCase()}
-                    </Badge>
-                    {' '}({lastResult.confidence}% confidence)
-                  </AlertDescription>
-                </div>
-              </Alert>
+              <div className="space-y-4">
+                <Alert className="mt-4">
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(lastResult.status)}
+                    <AlertDescription>
+                      <strong>Result:</strong> {lastResult.extractedText} - {' '}
+                      <Badge className={getStatusBadge(lastResult.status)}>
+                        {lastResult.status.toUpperCase()}
+                      </Badge>
+                      {' '}({lastResult.confidence}% confidence)
+                    </AlertDescription>
+                  </div>
+                </Alert>
+                <ConfidenceMeter 
+                  confidence={lastResult.confidence} 
+                  status={lastResult.status} 
+                />
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Device Connection Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Device Connectivity</CardTitle>
-            <CardDescription>
-              Connect external inspection equipment for enhanced analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center py-8 space-y-4">
-              <div className="flex justify-center space-x-4">
-                <div className="p-4 rounded-lg bg-muted">
-                  <Bluetooth className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <div className="p-4 rounded-lg bg-muted">
-                  <Usb className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium text-foreground">Coming Soon</h3>
-                <p className="text-sm text-muted-foreground">
-                  Bluetooth & USB-C device integration for real-time inspection data
-                </p>
-              </div>
-              <Button disabled variant="outline">
-                Connect Device
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Multi-Device Handoff */}
+        <MultiDeviceHandoff />
       </div>
 
-      {/* Recent Inspections */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Inspections</CardTitle>
-          <CardDescription>Your latest IC marking verification results</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {workerInspections.map((inspection) => (
-              <div key={inspection.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  {getStatusIcon(inspection.status)}
-                  <div>
-                    <p className="font-medium text-sm">{inspection.extractedText}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {inspection.batchNumber} • {inspection.timestamp.toLocaleDateString()}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Inspections */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Inspections</CardTitle>
+            <CardDescription>Your latest IC marking verification results</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {workerInspections.map((inspection) => (
+                <div key={inspection.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    {getStatusIcon(inspection.status)}
+                    <div>
+                      <p className="font-medium text-sm">{inspection.extractedText}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {inspection.batchNumber} • {inspection.timestamp.toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge className={getStatusBadge(inspection.status)}>
+                      {inspection.status}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {inspection.confidence}% confidence
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge className={getStatusBadge(inspection.status)}>
-                    {inspection.status}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {inspection.confidence}% confidence
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Badge System */}
+        <BadgeSystem userStats={userStats} />
+      </div>
+
+      {/* Enhanced Analysis Features */}
+      {lastResult && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ICImageOverlay 
+            imageUrl="/placeholder.svg"
+            extractedText={lastResult.extractedText}
+            confidence={lastResult.confidence}
+          />
+          <HeatmapOverlay 
+            status={lastResult.status}
+            confidence={lastResult.confidence}
+          />
+          <QRCodeGenerator inspection={lastResult} />
+        </div>
+      )}
     </div>
   );
 };
